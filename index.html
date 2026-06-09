@@ -173,13 +173,13 @@ details.exp .ic{padding:4px 16px 12px;font-size:13px}
    LEDGR ACCOUNTING COMPETENCY ASSESSMENT  ·  v2
    Single file. Candidate sees only a completion code. Admin decodes it.
    ------------------------------------------------------------------
-   CONFIG: replace PUBKEY with your own (admin console > Generate keypair),
-   keep the matching private key off-device. SECTIONS controls which
+   CONFIG: set PIN to any 4 digits you like. Candidates encrypt to it;
+   you unlock results by tapping it on the keypad. SECTIONS controls which
    industry modules run; override per candidate with ?sections=core,ecom
    =================================================================== */
 const CONFIG = {
-  // DEMO public key. Regenerate your own before real use (admin console).
-  PUBKEY: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArbC1LQ/mcsXQTs7riYRvFABByP2igkr3iQpu1Aj8AD+xciutd4/CcirnW50hS91gb35bdioiWp/+nuQqMpNs1W271tVYt5f/khxDz90Wyh8MuPdQXaJimWmydt/yrd3oQmiTKPpzDH4hd0qiHUF1SQACiFovES2rRSG7ABvvRK3HtjOfCfrn0fx7BymBRaxNxIMjRbo8JzH1+fUoiE1XuJ9IkEgbmfDLXmUrH+aDf5NMwawlvI9NZ403nW7U5ofhlvyIQPCLbXdpLcvVMt5VStXwLyuipO+q7DSn6cbLQjUZYCxpwTPg+IhRJopb06nPxE7leKa3L8n4oQu8PEUxuQIDAQAB",
+  // 4-digit PIN that locks and unlocks results. Change it here and the keypad still works.
+  PIN: '2022',
   SECTIONS: ['core','ecom','pos','profsvc','integration'],
   SHOW_CANDIDATE_SCORE: false,   // candidate sees only a completion code
   ADMIN_HASH: 'ledgr-admin'      // open <file>#ledgr-admin for the review console
@@ -195,29 +195,27 @@ const r50=n=>Math.round(n/50)*50;
 const fmt=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
-/* ---------- crypto (hybrid RSA-OAEP + AES-GCM) ---------- */
+/* ---------- crypto (PIN-derived AES-GCM) ---------- */
 function bufToB64(buf){let b='';const u=new Uint8Array(buf);for(let i=0;i<u.length;i++)b+=String.fromCharCode(u[i]);return btoa(b);}
 function b64ToBuf(b64){const s=atob(b64);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u.buffer;}
 const b64u=buf=>bufToB64(buf).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 function b64uBuf(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return b64ToBuf(s);}
-async function importPub(spki){return crypto.subtle.importKey('spki',b64ToBuf(spki),{name:'RSA-OAEP',hash:'SHA-256'},false,['encrypt']);}
-async function importPriv(pkcs8){return crypto.subtle.importKey('pkcs8',b64ToBuf(pkcs8),{name:'RSA-OAEP',hash:'SHA-256'},false,['decrypt']);}
-async function encryptPayload(obj){
-  const pub=await importPub(CONFIG.PUBKEY);
-  const data=new TextEncoder().encode(JSON.stringify(obj));
-  const aes=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
-  const iv=crypto.getRandomValues(new Uint8Array(12));
-  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},aes,data);
-  const raw=await crypto.subtle.exportKey('raw',aes);
-  const wrap=await crypto.subtle.encrypt({name:'RSA-OAEP'},pub,raw);
-  return 'LEDGR2.'+b64u(wrap)+'.'+b64u(iv)+'.'+b64u(ct);
+async function deriveKey(pin,salt){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(String(pin)),{name:'PBKDF2'},false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
 }
-async function decryptPayload(code,pkcs8){
-  const p=code.trim().split('.'); if(p[0]!=='LEDGR2'||p.length!==4) throw new Error('Not a valid Ledgr code');
-  const priv=await importPriv(pkcs8.replace(/\s+/g,''));
-  const raw=await crypto.subtle.decrypt({name:'RSA-OAEP'},priv,b64uBuf(p[1]));
-  const aes=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['decrypt']);
-  const data=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(b64uBuf(p[2]))},aes,b64uBuf(p[3]));
+async function encryptPayload(obj){
+  const data=new TextEncoder().encode(JSON.stringify(obj));
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const key=await deriveKey(CONFIG.PIN,salt);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,data);
+  return 'LEDGR3.'+b64u(salt)+'.'+b64u(iv)+'.'+b64u(ct);
+}
+async function decryptPayload(code,pin){
+  const p=code.trim().split('.'); if(p[0]!=='LEDGR3'||p.length!==4) throw new Error('Not a valid Ledgr code');
+  const key=await deriveKey(pin,new Uint8Array(b64uBuf(p[1])));
+  const data=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(b64uBuf(p[2]))},key,b64uBuf(p[3]));
   return JSON.parse(new TextDecoder().decode(data));
 }
 async function shortRef(code){const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code));
@@ -824,15 +822,21 @@ function renderAdmin(){
  const checks=SECORDER.map(s=>`<label class="check"><input type="checkbox" class="seccb" value="${s}" checked> <span>${SECLABEL[s]}</span></label>`).join('');
  app().innerHTML=`<div class="screen"><div class="card">
    <div class="kicker">Admin · Review Console</div><h2>Decode a completion code</h2>
-   <p class="muted">Paste your private key and a candidate\u2019s code. Decryption happens here in your browser; nothing is sent anywhere.</p>
-   <label class="fld">Your private key (PKCS8, base64)</label>
-   <textarea id="pk" placeholder="MIIE..." style="min-height:90px;font-family:var(--mono);font-size:12px"></textarea>
-   <label class="fld" style="margin-top:14px">Candidate completion code</label>
-   <textarea id="cc" placeholder="LEDGR2...." style="min-height:90px;font-family:var(--mono);font-size:12px"></textarea>
-   <div id="err" class="small" style="color:var(--rust);margin-top:8px"></div>
-   <div class="nav"><button class="linkbtn" id="genbtn">Generate a new keypair</button>
-     <button class="btn primary" id="dec">Decrypt &amp; view report</button></div>
-   <div id="keys"></div>
+   <style>
+   .padbtn{font-family:var(--mono);font-size:20px;font-weight:600;height:60px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);cursor:pointer;transition:.1s}
+   .padbtn:hover{border-color:var(--emerald);background:rgba(14,92,70,.05)}
+   .padbtn:active{transform:translateY(1px)}
+   .padbtn.fn{font-family:var(--sans);font-size:13px;color:var(--ink-soft)}
+   .pindot{width:46px;height:54px;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;font-family:var(--mono);font-size:24px;font-weight:600;background:#fff}
+   .pindot.on{border-color:var(--emerald);color:var(--emerald)}
+   </style>
+   <p class="muted">Paste the candidate code, then tap your 4-digit PIN. It decodes the moment the fourth digit lands. Everything happens in your browser; nothing is sent anywhere.</p>
+   <label class="fld">Candidate completion code</label>
+   <textarea id="cc" placeholder="LEDGR3...." style="min-height:90px;font-family:var(--mono);font-size:12px"></textarea>
+   <label class="fld" style="margin-top:16px">PIN</label>
+   <div id="pindots" style="display:flex;gap:10px;margin:4px 0 14px"></div>
+   <div id="pad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:264px"></div>
+   <div id="err" class="small" style="color:var(--rust);margin-top:12px"></div>
  </div>
  <div class="card">
    <div class="kicker">Admin · Candidate link</div><h2>Build an assessment link</h2>
@@ -846,22 +850,29 @@ function renderAdmin(){
    <div class="codebox" id="genlink"></div>
    <div class="nav noprint"><span class="muted small">The communication station is always included.</span><button class="btn primary" id="copylink">Copy link</button></div>
  </div></div>`;
- document.getElementById('dec').onclick=async()=>{
-   const pk=document.getElementById('pk').value.trim(),cc=document.getElementById('cc').value.trim();
-   const err=document.getElementById('err');err.textContent='';
-   if(!pk||!cc){err.textContent='Paste both the private key and the code.';return;}
-   try{const payload=await decryptPayload(cc,pk);renderReport(payload);}
-   catch(e){err.textContent='Could not decrypt. Check that the key matches the public key in this file and the code is complete. ('+e.message+')';}
+ let pin='';
+ const padEl=document.getElementById('pad');
+ const keys=['1','2','3','4','5','6','7','8','9','clr','0','bk'];
+ const lbl={clr:'Clear',bk:'\u232b'};
+ padEl.innerHTML=keys.map(k=>`<button class="padbtn ${(k==='clr'||k==='bk')?'fn':''}" data-k="${k}">${lbl[k]||k}</button>`).join('');
+ const drawDots=()=>{document.getElementById('pindots').innerHTML=[0,1,2,3].map(i=>`<div class="pindot ${pin[i]?'on':''}">${pin[i]||''}</div>`).join('');};
+ const tryDecode=async()=>{
+   const cc=document.getElementById('cc').value.trim();const err=document.getElementById('err');
+   if(!cc){err.textContent='Paste the candidate code first, then enter your PIN.';pin='';drawDots();return;}
+   try{const payload=await decryptPayload(cc,pin);renderReport(payload);}
+   catch(e){err.textContent='That PIN did not open this code. Check the PIN, and that the full code is pasted.';pin='';drawDots();}
  };
- document.getElementById('genbtn').onclick=async()=>{
-   const kp=await crypto.subtle.generateKey({name:'RSA-OAEP',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['encrypt','decrypt']);
-   const pub=bufToB64(await crypto.subtle.exportKey('spki',kp.publicKey));
-   const priv=bufToB64(await crypto.subtle.exportKey('pkcs8',kp.privateKey));
-   document.getElementById('keys').innerHTML=`<div class="divider"></div>
-     <div class="prompt"><b>New keypair generated.</b> Paste the public key into <code>CONFIG.PUBKEY</code> at the top of this file, save it, and distribute that file. Keep the private key somewhere safe (password manager). Anyone with the file can run the test; only this private key can read results.</div>
-     <label class="fld">Public key (embed in CONFIG.PUBKEY)</label><div class="codebox">${pub}</div>
-     <label class="fld" style="margin-top:12px">Private key (keep secret, never put in the file)</label><div class="codebox">${priv}</div>`;
+ const press=(v)=>{document.getElementById('err').textContent='';
+   if(v==='clr'){pin='';drawDots();return;}
+   if(v==='bk'){pin=pin.slice(0,-1);drawDots();return;}
+   if(pin.length>=4)return; pin+=v; drawDots(); if(pin.length===4)tryDecode();
  };
+ padEl.querySelectorAll('.padbtn').forEach(b=>b.onclick=()=>press(b.dataset.k));
+ drawDots();
+ if(window.__ledgrPadKey)document.removeEventListener('keydown',window.__ledgrPadKey);
+ window.__ledgrPadKey=(e)=>{if(!document.getElementById('pad'))return;
+   if(e.key>='0'&&e.key<='9')press(e.key);else if(e.key==='Backspace')press('bk');else if(e.key==='Enter'&&pin.length===4)tryDecode();};
+ document.addEventListener('keydown',window.__ledgrPadKey);
  const updateLink=()=>{
    const b=document.getElementById('baseurl').value.trim().replace(/[?#].*$/,'');
    const sel=[...document.querySelectorAll('.seccb:checked')].map(c=>c.value);
