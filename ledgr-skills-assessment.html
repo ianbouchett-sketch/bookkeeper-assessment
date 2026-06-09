@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledgr - Accounting Competency Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F1E9; --paper-2:#FBFAF5; --ink:#16211C; --ink-soft:#42524A;
+  --line:#D8D2C4; --line-2:#E7E2D6; --emerald:#0E5C46; --emerald-dk:#0A4736;
+  --amber:#B5710F; --rust:#9C3320; --good:#0E5C46; --bad:#9C3320;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif; --disp:'Fraunces',serif;
+  --shadow:0 1px 2px rgba(22,33,28,.06),0 8px 28px rgba(22,33,28,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;
+  background-image:radial-gradient(circle at 12% 18%,rgba(14,92,70,.05),transparent 42%),radial-gradient(circle at 88% 8%,rgba(181,113,15,.05),transparent 40%);
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto;padding:0 22px 90px}
+.tabnum{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(244,241,233,.86);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-bottom:28px}
+.topbar-in{max-width:940px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand b{font-family:var(--disp);font-weight:600;font-size:21px;letter-spacing:-.01em}
+.brand span{font-size:11px;text-transform:uppercase;letter-spacing:.22em;color:var(--ink-soft)}
+.clock{font-family:var(--mono);font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:7px}
+.clock .dot{width:7px;height:7px;border-radius:50%;background:var(--emerald);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.stepper{display:flex;gap:5px;margin-bottom:24px;flex-wrap:wrap}
+.step{flex:1;min-width:34px;height:5px;border-radius:3px;background:var(--line-2);position:relative;overflow:hidden}
+.step.done{background:var(--emerald)}
+.step.active::after{content:"";position:absolute;inset:0;background:var(--emerald);animation:grow 1.1s ease both}
+@keyframes grow{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+.screen{animation:rise .45s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.card{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:30px 32px;box-shadow:var(--shadow);margin-bottom:20px}
+.kicker{font-size:11px;text-transform:uppercase;letter-spacing:.2em;color:var(--emerald);font-weight:600;margin-bottom:10px}
+h1{font-family:var(--disp);font-weight:600;font-size:clamp(28px,5vw,42px);line-height:1.05;letter-spacing:-.02em;margin:0 0 14px}
+h2{font-family:var(--disp);font-weight:600;font-size:26px;letter-spacing:-.01em;margin:0 0 6px}
+h3{font-family:var(--sans);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);margin:22px 0 8px}
+.lead{font-size:16px;color:var(--ink-soft);max-width:64ch}
+.prompt{background:#fff;border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:9px;padding:16px 18px;margin:18px 0;font-size:15px}
+.prompt b{color:var(--ink)}
+.muted{color:var(--ink-soft)} .small{font-size:13px}
+.btn{font-family:var(--sans);font-weight:600;font-size:15px;border:none;border-radius:9px;padding:13px 26px;cursor:pointer;transition:.18s}
+.btn.primary{background:var(--emerald);color:#fff}
+.btn.primary:hover{background:var(--emerald-dk);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--ink-soft);color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}
+input[type=text],input[type=password],textarea,select{font-family:var(--sans);font-size:15px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:11px 12px;width:100%}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--emerald);box-shadow:0 0 0 3px rgba(14,92,70,.12)}
+.num-in{font-family:var(--mono);text-align:right}
+label.fld{display:block;font-weight:600;font-size:13px;margin:0 0 7px}
+textarea{resize:vertical;min-height:130px;line-height:1.55}
+table.led{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+table.led th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);font-weight:600;padding:8px 10px;border-bottom:2px solid var(--line)}
+table.led td{padding:10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+table.led td.amt{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.led tr:hover{background:rgba(14,92,70,.025)}
+.desc-strong{font-weight:500}
+.date-cell{font-family:var(--mono);font-size:13px;color:var(--ink-soft);white-space:nowrap}
+.stmt{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 4px;font-family:var(--mono);font-size:14px}
+.stmt .sec{font-family:var(--sans);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft);padding:16px 18px 6px}
+.stmt .row{display:flex;justify-content:space-between;padding:7px 18px;cursor:pointer;border-radius:6px;transition:.12s;border:1px solid transparent}
+.stmt .row:hover{background:var(--paper)}
+.stmt .row .lbl{font-family:var(--sans)}
+.stmt .row.flagged{background:rgba(156,51,32,.08);border-color:rgba(156,51,32,.4)}
+.stmt .row.flagged .lbl::before{content:"\2691  ";color:var(--rust)}
+.stmt .total{display:flex;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--line);font-weight:600}
+.stmt .total .lbl{font-family:var(--sans)}
+.stmt .net{display:flex;justify-content:space-between;padding:12px 18px;margin:6px 8px 4px;background:var(--ink);color:var(--paper);border-radius:7px;font-weight:600}
+.stmt .net .lbl{font-family:var(--sans)}
+.flag-hint{font-size:13px;color:var(--ink-soft);margin:14px 0 4px;display:flex;justify-content:space-between}
+.flag-count{font-family:var(--mono);color:var(--emerald);font-weight:600}
+.je{width:100%;border-collapse:collapse;margin-top:8px}
+.je th{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);text-align:left;padding:6px 8px;font-weight:600}
+.je td{padding:5px 8px}.je .dc{width:120px}
+.je-foot{display:flex;justify-content:flex-end;gap:26px;margin-top:14px;font-family:var(--mono);font-size:14px;align-items:center;flex-wrap:wrap}
+.bal{padding:5px 12px;border-radius:20px;font-weight:600;font-size:13px}
+.bal.ok{background:rgba(14,92,70,.12);color:var(--emerald)}
+.bal.no{background:rgba(156,51,32,.1);color:var(--rust)}
+.linkbtn{background:none;border:none;color:var(--emerald);font-family:var(--sans);font-weight:600;font-size:13px;cursor:pointer;padding:8px 0}
+/* mapping grid */
+.map{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+.map th{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);text-align:left;padding:8px;font-weight:600;border-bottom:2px solid var(--line)}
+.map td{padding:8px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.map td.amt{text-align:right;font-family:var(--mono);white-space:nowrap}
+.map .lblcell{max-width:280px}
+.map .lblcell small{display:block;color:var(--ink-soft);font-weight:400;margin-top:2px}
+.dcseg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.dcseg button{border:none;background:#fff;font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 13px;cursor:pointer;color:var(--ink-soft)}
+.dcseg button.onD{background:var(--ink);color:#fff}
+.dcseg button.onC{background:var(--emerald);color:#fff}
+/* rec */
+.recgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+@media(max-width:640px){.recgrid{grid-template-columns:1fr}.topbar-in{flex-wrap:wrap}}
+.balbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.balbox .t{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-soft);font-weight:600}
+.balbox .v{font-family:var(--mono);font-size:24px;font-weight:600;margin-top:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:none;background:#fff;font-family:var(--sans);font-size:12px;font-weight:600;padding:7px 12px;cursor:pointer;color:var(--ink-soft)}
+.seg button.on-clear{background:var(--emerald);color:#fff}
+.seg button.on-out{background:var(--amber);color:#fff}
+.feebox{display:flex;align-items:center;gap:12px;background:#fff;border:1px dashed var(--line);border-radius:9px;padding:14px 16px;margin-top:6px}
+.check{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.check input{margin-top:3px;width:auto}
+/* multi-select judgment */
+.multi{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.opt{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:9px;padding:14px 16px;cursor:pointer;transition:.12s}
+.opt:hover{border-color:var(--ink-soft)}
+.opt.sel{border-color:var(--emerald);background:rgba(14,92,70,.05)}
+.opt input{margin-top:3px;width:auto}
+/* context / email panels */
+.ctx{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-size:14px}
+.ctx ul{margin:8px 0 0;padding-left:18px} .ctx li{margin:5px 0}
+.email-client{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:14px 0}
+.email-head{background:var(--paper);border-bottom:1px solid var(--line);padding:12px 16px;font-size:13px}
+.email-head .from{font-weight:600}.email-head .sub{color:var(--ink-soft)}
+.email-body{padding:16px 18px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+/* code box / completion */
+.codebox{font-family:var(--mono);font-size:12px;line-height:1.5;background:#10201b;color:#cfe9df;border-radius:10px;padding:16px;word-break:break-all;max-height:200px;overflow:auto;border:1px solid #1d3a30}
+.refid{font-family:var(--mono);font-size:22px;letter-spacing:.18em;color:var(--emerald);font-weight:600}
+/* report */
+.score-hero{display:flex;align-items:center;gap:30px;flex-wrap:wrap}
+.dial{--p:0;width:150px;height:150px;border-radius:50%;flex:none;background:conic-gradient(var(--emerald) calc(var(--p)*1%),var(--line-2) 0);display:grid;place-items:center;position:relative}
+.dial::before{content:"";position:absolute;inset:13px;background:var(--paper-2);border-radius:50%}
+.dial .pct{position:relative;font-family:var(--mono);font-size:34px;font-weight:600}
+.band{display:inline-block;padding:6px 16px;border-radius:20px;font-weight:600;font-size:13px;margin-top:8px}
+.dom{margin:14px 0}
+.dom .h{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
+.dom .h b{font-weight:600}.dom .h .s{font-family:var(--mono);color:var(--ink-soft)}
+.bar{height:9px;background:var(--line-2);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:5px;animation:fill 1s ease both}
+@keyframes fill{from{width:0}}
+.flags{background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 4px}
+.flags .f{display:flex;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--line-2);font-size:14px}
+.flags .f:last-child{border:none}.flags .f .v{font-family:var(--mono);font-weight:600}
+.flags .f.warn .v{color:var(--rust)}.flags .f.clean .v{color:var(--emerald)}
+.emailbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;white-space:pre-wrap;font-size:14px;line-height:1.6;max-height:300px;overflow:auto}
+.tag{display:inline-block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;padding:3px 9px;border-radius:5px;background:rgba(14,92,70,.1);color:var(--emerald);margin-left:8px}
+.tag.warn{background:rgba(181,113,15,.12);color:var(--amber)}
+.divider{height:1px;background:var(--line);margin:24px 0}
+ul.clean{margin:10px 0;padding-left:20px}ul.clean li{margin:5px 0}
+details.exp{background:#fff;border:1px solid var(--line);border-radius:9px;margin:8px 0;padding:4px 0}
+details.exp summary{cursor:pointer;padding:10px 16px;font-weight:600;font-size:14px}
+details.exp .ic{padding:4px 16px 12px;font-size:13px}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line-2);font-size:13px}
+.kv:last-child{border:none}.kv .k{color:var(--ink-soft)}.kv .v{font-family:var(--mono)}
+.kv.right .v{color:var(--emerald)}.kv.wrong .v{color:var(--rust)}
+@media print{.topbar,.stepper,.nav,.noprint{display:none}body{background:#fff}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><b>Ledgr</b><span id="brandsub">Competency Assessment</span></div>
+    <div class="clock" id="clock"><span class="dot"></span><span id="clocktxt">00:00</span></div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="stepper" id="stepper"></div>
+  <div id="app"></div>
+</div>
+
+<script>
+/* ===================================================================
+   LEDGR ACCOUNTING COMPETENCY ASSESSMENT  ·  v2
+   Single file. Candidate sees only a completion code. Admin decodes it.
+   ------------------------------------------------------------------
+   CONFIG: replace PUBKEY with your own (admin console > Generate keypair),
+   keep the matching private key off-device. SECTIONS controls which
+   industry modules run; override per candidate with ?sections=core,ecom
+   =================================================================== */
+const CONFIG = {
+  // DEMO public key. Regenerate your own before real use (admin console).
+  PUBKEY: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtpewQsPkyAbSBfaxFEEOR2suUWPOTHmM5k+Yk7efXKw7sY2VxcBCu/KQqJECawZbJGH42Z4KnrrgtN5tyPAyaGbW9pkId4NtWqO1sg0bOCG9NQk20fqrTKv7vhdauZTWs8i1t1RZVwZYDY2pUnovXSHqVgK9VtNclhVdMpy6zDBWUkhao+CDnDrReRS/wzk4KgCbNkrS91BJoncnwsY+C0TaaRa+8DjSQU/Z4P41EVY4McmVTWjaoUpD2qnoNuZgej9tnqNjk5Jfj0KVCRigsBjOjiCJVsUIAKAWL8v8au1zALpEvWntB8+vD6scj/G/TtCWeVKcu9REi3LbPPos8wIDAQAB",
+  SECTIONS: ['core','ecom','pos','profsvc','integration'],
+  SHOW_CANDIDATE_SCORE: false,   // candidate sees only a completion code
+  ADMIN_HASH: 'ledgr-admin'      // open <file>#ledgr-admin for the review console
+};
+// allow ?sections=core,ecom to override per candidate
+(function(){ const q=new URLSearchParams(location.search).get('sections');
+  if(q) CONFIG.SECTIONS = q.split(',').map(s=>s.trim()).filter(Boolean); })();
+
+/* ---------- small utils ---------- */
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const r50=n=>Math.round(n/50)*50;
+const fmt=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ---------- crypto (hybrid RSA-OAEP + AES-GCM) ---------- */
+function bufToB64(buf){let b='';const u=new Uint8Array(buf);for(let i=0;i<u.length;i++)b+=String.fromCharCode(u[i]);return btoa(b);}
+function b64ToBuf(b64){const s=atob(b64);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u.buffer;}
+const b64u=buf=>bufToB64(buf).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+function b64uBuf(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return b64ToBuf(s);}
+async function importPub(spki){return crypto.subtle.importKey('spki',b64ToBuf(spki),{name:'RSA-OAEP',hash:'SHA-256'},false,['encrypt']);}
+async function importPriv(pkcs8){return crypto.subtle.importKey('pkcs8',b64ToBuf(pkcs8),{name:'RSA-OAEP',hash:'SHA-256'},false,['decrypt']);}
+async function encryptPayload(obj){
+  const pub=await importPub(CONFIG.PUBKEY);
+  const data=new TextEncoder().encode(JSON.stringify(obj));
+  const aes=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},aes,data);
+  const raw=await crypto.subtle.exportKey('raw',aes);
+  const wrap=await crypto.subtle.encrypt({name:'RSA-OAEP'},pub,raw);
+  return 'LEDGR2.'+b64u(wrap)+'.'+b64u(iv)+'.'+b64u(ct);
+}
+async function decryptPayload(code,pkcs8){
+  const p=code.trim().split('.'); if(p[0]!=='LEDGR2'||p.length!==4) throw new Error('Not a valid Ledgr code');
+  const priv=await importPriv(pkcs8.replace(/\s+/g,''));
+  const raw=await crypto.subtle.decrypt({name:'RSA-OAEP'},priv,b64uBuf(p[1]));
+  const aes=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['decrypt']);
+  const data=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(b64uBuf(p[2]))},aes,b64uBuf(p[3]));
+  return JSON.parse(new TextDecoder().decode(data));
+}
+async function shortRef(code){const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code));
+  return Array.from(new Uint8Array(h)).slice(0,4).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();}
+
+/* ---------- session state ---------- */
+const state={
+  name:'', start:Date.now(), modStart:Date.now(), times:{},
+  integrity:{blur:0,pastes:0},
+  m1:{}, m2:[], m3:[{acct:'',d:'',c:''},{acct:'',d:'',c:''}],
+  m4:{marks:{},fee:false,bal:''},
+  ecomDep:{}, posCash:[], invTri:{}, invMsg:'', m5:'',
+  map:{}  // mapping-grid answers keyed by station id
+};
+
+/* ---------- randomized parameters (fresh per session = no shared key) ---------- */
+const P=(()=>{
+  const o={};
+  // core
+  o.ins=pick([7200,9600,12000,14400]); o.monthlyIns=o.ins/12;
+  o.fee=pick([28,35,42]); o.oc=pick([1150,1250,1480]); o.dit=pick([2200,2400,2750]);
+  o.bank=pick([18420,21130,16880]); o.book=o.bank+o.dit-o.oc+o.fee;
+  o.recAdjBank=o.bank-o.oc+o.dit;
+  // ecommerce consolidating JE
+  o.eGross=r50(rnd(42000,68000)); o.eTax=r50(o.eGross*pick([.06,.07,.0825]));
+  o.eShip=r50(rnd(1500,3200)); o.eFees=r50(o.eGross*pick([.029,.035]));
+  o.eRefund=r50(rnd(800,2400)); o.eNet=o.eGross+o.eShip+o.eTax-o.eFees-o.eRefund;
+  // POS month-end JE
+  o.pSales=r50(rnd(58000,82000)); o.pTax=r50(o.pSales*pick([.06,.07])); o.pTips=r50(rnd(4000,7000));
+  o.pGCsold=r50(rnd(1500,3000)); o.pGCredeem=r50(rnd(900,2000)); o.pFees=r50(o.pSales*.027);
+  o.pLoan=r50(rnd(1800,3500)); o.pNet=o.pSales+o.pTax+o.pTips+o.pGCsold-o.pGCredeem-o.pFees-o.pLoan;
+  o.pCashSales=r50(rnd(6000,9000)); o.pCashDep=r50(o.pCashSales*pick([.4,.55])); o.pCOH=r50(rnd(22000,46000));
+  // professional services
+  o.psSOW=r50(rnd(6000,12000)); o.psRate=185;
+  // payroll integration
+  o.pg=r50(rnd(38000,52000)); o.pet=r50(o.pg*.0915); o.pwt=r50(o.pg*.19); o.pk=r50(o.pg*.05);
+  o.pnet=o.pg-o.pwt-o.pk;
+  return o;
+})();
+</script>
+<script>
+/* ===================== CONTENT DATA ===================== */
+const app=()=>document.getElementById('app');
+
+/* core: classification */
+const ACCTS=["Select a treatment","Sales Income","Sales Returns & Allowances (contra-revenue)",
+"Cost of Goods Sold","Rent Expense","Office Supplies","Software & Subscriptions","Meals (50%)",
+"Auto Expense","Insurance Expense","Prepaid Expense (asset)","Fixed Asset - Equipment",
+"Owner's Draw / Distribution","Owner's Contribution","Loan Payable (principal + interest split)",
+"Transfer Between Accounts","Interest Expense","Estimated Income Tax (not a business expense)"];
+const TX=[
+ {d:"AMZN Mktp - parts for owner's personal boat", amt:rnd(180,420), ans:"Owner's Draw / Distribution"},
+ {d:"Annual general-liability insurance - paid in full", amt:P.ins, ans:"Prepaid Expense (asset)"},
+ {d:"Dell - new laptop for the bookkeeper", amt:rnd(2100,2600), ans:"Fixed Asset - Equipment"},
+ {d:"Transfer to money-market savings", amt:rnd(4000,8000), ans:"Transfer Between Accounts"},
+ {d:"Stripe payout - customer invoices settled", amt:rnd(3200,7800), ans:"Sales Income"},
+ {d:"Refund issued to customer for returned product", amt:rnd(90,260), ans:"Sales Returns & Allowances (contra-revenue)"},
+ {d:"IRS - owner's quarterly estimated tax payment", amt:rnd(2800,4200), ans:"Estimated Income Tax (not a business expense)"},
+ {d:"Ally Auto - monthly delivery-truck loan payment", amt:rnd(560,720), ans:"Loan Payable (principal + interest split)"},
+ {d:"Lunch with a prospective client (2 attendees)", amt:rnd(60,120), ans:"Meals (50%)"},
+ {d:"Staples - printer paper, pens, folders", amt:rnd(35,90), ans:"Office Supplies"}
+];
+
+/* core: P&L error hunt */
+const PL=(()=>{const rev1=rnd(48000,62000),rev2=rnd(18000,26000),loan=25000,cogsM=rnd(19000,24000),
+ cogsFee=rnd(1800,2600),rentInCogs=3200,payroll=rnd(15000,19000),soft=rnd(900,1400),ins=rnd(500,800),
+ util=rnd(600,950),bank=rnd(80,160),adv=-1250,draw=4500;
+ return [{sec:"INCOME"},{lbl:"Product Sales",amt:rev1,err:false},{lbl:"Service Revenue",amt:rev2,err:false},
+ {lbl:"Loan Proceeds",amt:loan,err:true},{tot:"Total Income",amt:rev1+rev2+loan},
+ {sec:"COST OF GOODS SOLD"},{lbl:"Materials & Inventory",amt:cogsM,err:false},
+ {lbl:"Merchant Processing Fees",amt:cogsFee,err:false},{lbl:"Office Rent",amt:rentInCogs,err:true},
+ {tot:"Total COGS",amt:cogsM+cogsFee+rentInCogs},{sec:"OPERATING EXPENSES"},
+ {lbl:"Payroll & Wages",amt:payroll,err:false},{lbl:"Software & Subscriptions",amt:soft,err:false},
+ {lbl:"Insurance",amt:ins,err:false},{lbl:"Utilities",amt:util,err:false},
+ {lbl:"Advertising",amt:adv,err:true},{lbl:"Bank Charges",amt:bank,err:false},
+ {lbl:"Owner's Draw",amt:draw,err:true},
+ {tot:"Total Operating Expenses",amt:payroll+soft+ins+util+adv+bank+draw}];})();
+const PL_ERR=PL.filter(r=>r.err).map(r=>r.lbl);
+
+/* core: adjusting JE */
+const JE_ACCTS=["Select an account","Insurance Expense","Prepaid Expense","Cash","Accounts Payable",
+ "Accrued Liabilities","Insurance Payable","Owner's Draw","Retained Earnings","Depreciation Expense"];
+
+/* core: bank rec */
+const REG=[
+ {id:1,date:"06/02",d:"Customer deposit",amt:rnd(2800,3400),st:"clear"},
+ {id:2,date:"06/03",d:"Check #1043 - monthly rent",amt:3200,st:"clear"},
+ {id:3,date:"06/05",d:"Payroll ACH run",amt:rnd(5000,5800),st:"clear"},
+ {id:4,date:"06/14",d:"Check #1051 - vendor (uncashed)",amt:P.oc,st:"out"},
+ {id:5,date:"06/15",d:"Customer deposit (after cutoff)",amt:P.dit,st:"out"},
+ {id:6,date:"06/10",d:"Card payment - supplies",amt:rnd(700,950),st:"clear"}
+];
+
+/* ecommerce: deposit triage */
+const EDEP_OPTS=["Select one","Sales-channel settlement (record gross via JE)","Owner transfer in (not revenue)","Unreported sales channel (record as new sales)","Transfer between the company's own accounts (do not record)"];
+const EDEP=[
+ {d:"Shopify Payments payout", amt:rnd(8000,16000), ans:"Sales-channel settlement (record gross via JE)"},
+ {d:"Amazon Marketplace settlement", amt:rnd(6000,14000), ans:"Sales-channel settlement (record gross via JE)"},
+ {d:"Etsy deposit", amt:rnd(1200,3000), ans:"Sales-channel settlement (record gross via JE)"},
+ {d:"Venmo deposit from a repeat customer", amt:rnd(300,900), ans:"Unreported sales channel (record as new sales)"},
+ {d:"Transfer from owner's personal savings", amt:rnd(3000,7000), ans:"Owner transfer in (not revenue)"},
+ {d:"Transfer from owner's money-market account", amt:rnd(2000,6000), ans:"Owner transfer in (not revenue)"}
+];
+
+/* ecommerce: consolidating revenue JE (A2X-style) */
+const EJE_ACCTS=["Select one","Sales Income","Shipping Income","Sales Tax Payable","Merchant & Marketplace Fees","Sales Returns & Allowances","Bank / Clearing","Cost of Goods Sold","Other Income","Owner Contribution","Leave out of the entry"];
+const EJE=[
+ {lbl:"Gross product sales (per channel reports)", amt:P.eGross, acct:"Sales Income", dc:"C"},
+ {lbl:"Shipping income collected", amt:P.eShip, acct:"Shipping Income", dc:"C"},
+ {lbl:"Sales tax collected from customers", amt:P.eTax, acct:"Sales Tax Payable", dc:"C"},
+ {lbl:"Marketplace & processing fees", amt:P.eFees, acct:"Merchant & Marketplace Fees", dc:"D"},
+ {lbl:"Customer refunds / returns", amt:P.eRefund, acct:"Sales Returns & Allowances", dc:"D"},
+ {lbl:"Net amount actually deposited to the bank", amt:P.eNet, acct:"Bank / Clearing", dc:"D"}
+];
+
+/* POS / hospitality: month-end JE */
+const PJE_ACCTS=["Select one","Sales Income","Sales Tax Payable","Tips Payable","Gift Card Liability","Merchant Fees","Square Loan Payable","Bank / Cash","Cost of Goods Sold","Owner's Draw","Leave out of the entry"];
+const PJE=[
+ {lbl:"Gross food & beverage sales", amt:P.pSales, acct:"Sales Income", dc:"C"},
+ {lbl:"Sales tax collected", amt:P.pTax, acct:"Sales Tax Payable", dc:"C"},
+ {lbl:"Tips collected (paid out via payroll)", amt:P.pTips, acct:"Tips Payable", dc:"C"},
+ {lbl:"Gift cards sold this month", amt:P.pGCsold, acct:"Gift Card Liability", dc:"C"},
+ {lbl:"Gift cards redeemed (already inside sales above)", amt:P.pGCredeem, acct:"Gift Card Liability", dc:"D"},
+ {lbl:"Card processing fees", amt:P.pFees, acct:"Merchant Fees", dc:"D"},
+ {lbl:"Square Loan repayment withheld from deposits", amt:P.pLoan, acct:"Square Loan Payable", dc:"D"},
+ {lbl:"Net cash deposited to the bank", amt:P.pNet, acct:"Bank / Cash", dc:"D"}
+];
+const PCASH=[
+ {t:"Flag the growing undeposited-cash balance to the partner and ask for documentation of how the cash is used", ok:true},
+ {t:"Absent documentation, record the cash the owner kept as an Owner's Draw / distribution", ok:true},
+ {t:"Reconcile Square's reported cash sales to actual bank deposits every month so the gap stays visible", ok:true},
+ {t:"Leave it as a growing Cash on Hand asset since the money technically exists somewhere", ok:false},
+ {t:"Write the missing cash off to a miscellaneous expense to clear the balance", ok:false},
+ {t:"Raise reported sales to match the cash so the books look internally consistent", ok:false},
+ {t:"Record the kept cash as a loan to the owner with no note, terms, or repayment plan", ok:false}
+];
+
+/* professional services: invoice triage */
+const ITRI_OPTS=["Select one","Invoice now","Invoice now using an estimate","Clarify with client first","Do not bill"];
+const ITRI=[
+ {lbl:"Q2 implementation - fixed-fee SOW (PO #4471 already on file)", amt:P.psSOW, ans:"Invoice now"},
+ {lbl:"March advisory work - billed time & materials at $"+P.psRate+"/hr", ans:"Clarify with client first"},
+ {lbl:"Software licenses - passed through at cost", ans:"Clarify with client first"}
+];
+
+/* integration: payroll -> QBO mapping */
+const PAY_ACCTS=["Select one","Wages Expense","Payroll Tax Expense","Payroll Liabilities","401(k) Payable","Benefits Expense","Cash","Accounts Payable","Leave out of the entry"];
+const PAYJE=[
+ {lbl:"Gross wages", amt:P.pg, acct:"Wages Expense", dc:"D"},
+ {lbl:"Employer payroll taxes", amt:P.pet, acct:"Payroll Tax Expense", dc:"D"},
+ {lbl:"Payroll taxes payable (employer + employee withheld)", amt:P.pwt+P.pet, acct:"Payroll Liabilities", dc:"C"},
+ {lbl:"Employee 401(k) withheld", amt:P.pk, acct:"401(k) Payable", dc:"C"},
+ {lbl:"Net pay - direct deposit to employees", amt:P.pnet, acct:"Cash", dc:"C"}
+];
+
+/* ===================== SHARED: MAPPING GRID ===================== */
+function mapInit(id,lines){ if(!state.map[id]) state.map[id]=lines.map(()=>({acct:'',dc:''})); }
+function mapFootHTML(id,lines){
+ const a=state.map[id]; let d=0,c=0;
+ a.forEach((x,i)=>{ if(x.dc==='D')d+=lines[i].amt; if(x.dc==='C')c+=lines[i].amt; });
+ const ok=d>0&&Math.abs(d-c)<0.5;
+ return `<span>Debits <b>${fmt(d)}</b></span><span>Credits <b>${fmt(c)}</b></span>
+   <span class="bal ${ok?'ok':'no'}">${ok?'In balance':'Out of balance'}</span>`;
+}
+function renderMap(st){
+ mapInit(st.id, st.lines);
+ const a=state.map[st.id];
+ const rows=st.lines.map((ln,i)=>`<tr>
+   <td class="lblcell">${ln.lbl}${ln.sub?`<small>${ln.sub}</small>`:''}</td>
+   <td class="amt">${fmt(ln.amt)}</td>
+   <td><select data-i="${i}">${st.accounts.map(o=>`<option ${a[i].acct===o?'selected':''}>${o}</option>`).join('')}</select></td>
+   <td><span class="dcseg">
+     <button data-i="${i}" data-v="D" class="${a[i].dc==='D'?'onD':''}">Debit</button>
+     <button data-i="${i}" data-v="C" class="${a[i].dc==='C'?'onC':''}">Credit</button>
+   </span></td></tr>`).join('');
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">${st.kicker}</div><h2>${st.title}</h2>
+   ${st.intro}
+   <table class="map"><thead><tr><th>Component</th><th style="text-align:right">Amount</th><th>Account</th><th>Debit / Credit</th></tr></thead>
+   <tbody>${rows}</tbody></table>
+   <div class="je-foot" id="mf_${st.id}">${mapFootHTML(st.id,st.lines)}</div>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button>
+   <button class="btn primary" onclick="goNext()">Next station →</button></div>
+ </div></div>`;
+ app().querySelectorAll('select[data-i]').forEach(s=>s.onchange=e=>{
+   state.map[st.id][e.target.dataset.i].acct=e.target.value;
+   document.getElementById('mf_'+st.id).innerHTML=mapFootHTML(st.id,st.lines);
+ });
+ app().querySelectorAll('.dcseg button').forEach(b=>b.onclick=()=>{
+   const i=b.dataset.i; state.map[st.id][i].dc=b.dataset.v;
+   const seg=b.parentElement; seg.querySelectorAll('button').forEach(x=>x.className='');
+   b.className=b.dataset.v==='D'?'onD':'onC';
+   document.getElementById('mf_'+st.id).innerHTML=mapFootHTML(st.id,st.lines);
+ });
+}
+function scoreMap(id,lines){ mapInit(id,lines); const a=state.map[id]; let s=0;
+ lines.forEach((ln,i)=>{ if(a[i].acct===ln.acct)s+=0.5; if(a[i].dc===ln.dc)s+=0.5; });
+ return {s:Math.round(s*100)/100, max:lines.length};
+}
+</script>
+<script>
+/* ===================== STATIONS (non-mapping) ===================== */
+
+/* M1 classification */
+function renderM1(){
+ const rows=TX.map((t,i)=>`<tr><td><span class="desc-strong">${t.d}</span></td>
+   <td class="amt">${fmt(t.amt)}</td>
+   <td style="width:300px"><select data-i="${i}">${ACCTS.map(a=>`<option ${state.m1[i]===a?'selected':''}>${a}</option>`).join('')}</select></td></tr>`).join('');
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Core · The bank feed</div><h2>Categorize the month's transactions</h2>
+   <p class="muted">How would you record each of these?</p>
+   <table class="led"><thead><tr><th>Transaction</th><th style="text-align:right">Amount</th><th>Treatment</th></tr></thead><tbody>${rows}</tbody></table>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button><button class="btn primary" onclick="goNext()">Next station →</button></div>
+ </div></div>`;
+ app().querySelectorAll('select').forEach(s=>s.onchange=e=>state.m1[e.target.dataset.i]=e.target.value);
+}
+function scoreM1(){let s=0;TX.forEach((t,i)=>{if(state.m1[i]===t.ans)s++});return{s,max:10};}
+
+/* M2 P&L errors */
+function renderM2(){
+ const body=PL.map(r=>{
+   if(r.sec)return `<div class="sec">${r.sec}</div>`;
+   if(r.tot)return `<div class="total"><span class="lbl">${r.tot}</span><span>${fmt(r.amt)}</span></div>`;
+   const fl=state.m2.includes(r.lbl)?' flagged':'';
+   const amt=r.amt<0?`(${fmt(Math.abs(r.amt))})`:fmt(r.amt);
+   return `<div class="row${fl}" data-lbl="${r.lbl}"><span class="lbl">${r.lbl}</span><span>${amt}</span></div>`;
+ }).join('');
+ const ni=PL.find(r=>r.tot==='Total Income').amt-PL.find(r=>r.tot==='Total COGS').amt-PL.find(r=>r.tot==='Total Operating Expenses').amt;
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Core · The financial report</div><h2>Find what's wrong with this P&amp;L</h2>
+   <p class="muted">Here is this month's income statement. Click any line you would take issue with. Click again to unflag.</p>
+   <div class="flag-hint"><span>Income Statement - current month</span><span class="flag-count" id="fc">${state.m2.length} flagged</span></div>
+   <div class="stmt">${body}<div class="net"><span class="lbl">Net Income (as reported)</span><span>${fmt(ni)}</span></div></div>
+   <p class="small muted" style="margin-top:12px">Flag only the lines you would actually change.</p>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button><button class="btn primary" onclick="goNext()">Next station →</button></div>
+ </div></div>`;
+ app().querySelectorAll('.row').forEach(el=>el.onclick=()=>{
+   const l=el.dataset.lbl,i=state.m2.indexOf(l);
+   if(i>=0){state.m2.splice(i,1);el.classList.remove('flagged');}else{state.m2.push(l);el.classList.add('flagged');}
+   document.getElementById('fc').textContent=state.m2.length+' flagged';
+ });
+}
+function scoreM2(){let s=0;state.m2.forEach(l=>{s+=PL_ERR.includes(l)?1:-1});return{s:Math.max(0,s),max:4};}
+
+/* M3 adjusting JE */
+function renderM3(){
+ const rows=state.m3.map((r,i)=>`<tr>
+   <td><select data-i="${i}" data-f="acct">${JE_ACCTS.map(a=>`<option ${r.acct===a?'selected':''}>${a}</option>`).join('')}</select></td>
+   <td class="dc"><input class="num-in" data-i="${i}" data-f="d" placeholder="0.00" value="${r.d}"></td>
+   <td class="dc"><input class="num-in" data-i="${i}" data-f="c" placeholder="0.00" value="${r.c}"></td></tr>`).join('');
+ const td=state.m3.reduce((a,r)=>a+(parseFloat(r.d)||0),0),tc=state.m3.reduce((a,r)=>a+(parseFloat(r.c)||0),0);
+ const ok=td>0&&Math.abs(td-tc)<0.005;
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Core · The general ledger</div><h2>Record the month-end adjusting entry</h2>
+   <div class="prompt">A partner prepaid <b>${fmt(P.ins)}</b> for <b>12 months</b> of liability insurance on the first of the month, posted entirely to <b>Prepaid Insurance</b>. One month has elapsed. Book this month's adjusting journal entry.</div>
+   <table class="je"><thead><tr><th>Account</th><th>Debit</th><th>Credit</th></tr></thead><tbody>${rows}</tbody></table>
+   <button class="linkbtn" id="addrow">+ Add line</button>
+   <div class="je-foot" id="jf"><span>Debits <b>${fmt(td)}</b></span><span>Credits <b>${fmt(tc)}</b></span><span class="bal ${ok?'ok':'no'}">${ok?'In balance':'Out of balance'}</span></div>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button><button class="btn primary" onclick="goNext()">Next station →</button></div>
+ </div></div>`;
+ const foot=()=>{const td=state.m3.reduce((a,r)=>a+(parseFloat(r.d)||0),0),tc=state.m3.reduce((a,r)=>a+(parseFloat(r.c)||0),0),ok=td>0&&Math.abs(td-tc)<0.005;
+   document.getElementById('jf').innerHTML=`<span>Debits <b>${fmt(td)}</b></span><span>Credits <b>${fmt(tc)}</b></span><span class="bal ${ok?'ok':'no'}">${ok?'In balance':'Out of balance'}</span>`;};
+ app().querySelectorAll('[data-f]').forEach(el=>{
+   if(el.tagName==='SELECT')el.onchange=e=>state.m3[e.target.dataset.i].acct=e.target.value;
+   else el.oninput=e=>{state.m3[e.target.dataset.i][e.target.dataset.f]=e.target.value;foot();};
+ });
+ document.getElementById('addrow').onclick=()=>{state.m3.push({acct:'',d:'',c:''});renderM3();};
+}
+function scoreM3(){const m=P.monthlyIns;let s=0;
+ const td=state.m3.reduce((a,r)=>a+(parseFloat(r.d)||0),0),tc=state.m3.reduce((a,r)=>a+(parseFloat(r.c)||0),0);
+ if(td>0&&Math.abs(td-tc)<0.005)s+=1;
+ if(state.m3.find(r=>r.acct==='Insurance Expense'&&Math.abs((parseFloat(r.d)||0)-m)<0.5))s+=1.5;
+ if(state.m3.find(r=>r.acct==='Prepaid Expense'&&Math.abs((parseFloat(r.c)||0)-m)<0.5))s+=1.5;
+ return{s,max:4};}
+
+/* M4 bank rec */
+function renderM4(){
+ const rows=REG.map(r=>{const mk=state.m4.marks[r.id];
+   return `<tr><td class="date-cell">${r.date}</td><td>${r.d}</td><td class="amt">${fmt(r.amt)}</td>
+   <td style="text-align:right"><span class="seg">
+     <button class="${mk==='clear'?'on-clear':''}" data-id="${r.id}" data-v="clear">Cleared</button>
+     <button class="${mk==='out'?'on-out':''}" data-id="${r.id}" data-v="out">Outstanding</button></span></td></tr>`;}).join('');
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Core · The bank statement</div><h2>Reconcile the operating account</h2>
+   <p class="muted">Compare the statement to the books. Mark each book item cleared or outstanding, handle anything the bank shows that the books don't, then enter the reconciled balance.</p>
+   <div class="recgrid"><div class="balbox"><div class="t">Bank statement ending balance</div><div class="v">${fmt(P.bank)}</div></div>
+   <div class="balbox"><div class="t">QuickBooks book balance</div><div class="v">${fmt(P.book)}</div></div></div>
+   <table class="led"><thead><tr><th>Date</th><th>Book transaction</th><th style="text-align:right">Amount</th><th style="text-align:right">Status</th></tr></thead><tbody>${rows}</tbody></table>
+   <div class="feebox"><label class="check"><input type="checkbox" id="feeck" ${state.m4.fee?'checked':''}>
+     <span>The statement shows a <b>${fmt(P.fee)}</b> service charge that is not in QuickBooks. Check the box if you would put it on the company's books.</span></label></div>
+   <div style="margin-top:18px;max-width:320px"><label class="fld">Reconciled balance (what both sides should agree to)</label>
+     <input class="num-in" id="recbal" placeholder="0.00" value="${state.m4.bal}"></div>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button><button class="btn primary" onclick="goNext()">Next station →</button></div>
+ </div></div>`;
+ app().querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{state.m4.marks[b.dataset.id]=b.dataset.v;renderM4();});
+ document.getElementById('feeck').onchange=e=>state.m4.fee=e.target.checked;
+ document.getElementById('recbal').oninput=e=>state.m4.bal=e.target.value;
+}
+function scoreM4(){let s=0,marks=0;REG.forEach(r=>{if(state.m4.marks[r.id]===r.st)marks++});
+ s+=(marks/REG.length)*2; if(state.m4.fee)s+=1;
+ if(Math.abs((parseFloat(state.m4.bal)||0)-P.recAdjBank)<0.5)s+=2;
+ return{s:Math.round(s*100)/100,max:5};}
+
+/* ECOM deposit triage */
+function renderEDEP(){
+ const rows=EDEP.map((t,i)=>`<tr><td><span class="desc-strong">${t.d}</span></td><td class="amt">${fmt(t.amt)}</td>
+   <td style="width:340px"><select data-i="${i}">${EDEP_OPTS.map(o=>`<option ${state.ecomDep[i]===o?'selected':''}>${o}</option>`).join('')}</select></td></tr>`).join('');
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">E-commerce · Deposits vs revenue</div><h2>Sort the money hitting the bank</h2>
+   <p class="muted">A multi-channel seller's operating account shows the deposits below. How would you treat each one?</p>
+   <table class="led"><thead><tr><th>Bank deposit</th><th style="text-align:right">Amount</th><th>What is it?</th></tr></thead><tbody>${rows}</tbody></table>
+   <p class="small muted" style="margin-top:12px">Treat each deposit the way you would on the books.</p>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button><button class="btn primary" onclick="goNext()">Next station →</button></div>
+ </div></div>`;
+ app().querySelectorAll('select').forEach(s=>s.onchange=e=>state.ecomDep[e.target.dataset.i]=e.target.value);
+}
+function scoreEDEP(){let s=0;EDEP.forEach((t,i)=>{if(state.ecomDep[i]===t.ans)s++});return{s,max:6};}
+
+/* POS cash-handling judgment */
+function renderPCASH(){
+ const opts=PCASH.map((o,i)=>`<label class="opt ${state.posCash.includes(i)?'sel':''}" data-i="${i}">
+   <input type="checkbox" ${state.posCash.includes(i)?'checked':''}><span>${o.t}</span></label>`).join('');
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Food & retail · Cash handling</div><h2>The cash that never arrives</h2>
+   <div class="prompt">Square reports <b>${fmt(P.pCashSales)}</b> of cash sales this month, but only <b>${fmt(P.pCashDep)}</b> was deposited. Over the last six months the QuickBooks <b>Cash on Hand</b> balance has climbed to <b>${fmt(P.pCOH)}</b> and never goes down. The owner hasn't documented where the cash goes. How would you handle it? Select everything you would do.</div>
+   <div class="multi">${opts}</div>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button><button class="btn primary" onclick="goNext()">Next station →</button></div>
+ </div></div>`;
+ app().querySelectorAll('.opt').forEach(el=>el.onclick=e=>{
+   if(e.target.tagName==='INPUT')return; const i=+el.dataset.i,p=state.posCash.indexOf(i);
+   if(p>=0){state.posCash.splice(p,1);el.classList.remove('sel');el.querySelector('input').checked=false;}
+   else{state.posCash.push(i);el.classList.add('sel');el.querySelector('input').checked=true;}
+ });
+ app().querySelectorAll('.opt input').forEach(inp=>inp.onclick=e=>{e.stopPropagation();
+   const el=e.target.closest('.opt'),i=+el.dataset.i,p=state.posCash.indexOf(i);
+   if(e.target.checked&&p<0){state.posCash.push(i);el.classList.add('sel');}
+   if(!e.target.checked&&p>=0){state.posCash.splice(p,1);el.classList.remove('sel');}});
+}
+function scorePCASH(){let s=0;PCASH.forEach((o,i)=>{const sel=state.posCash.includes(i);if(sel)s+=o.ok?1:-1});return{s:Math.max(0,s),max:3};}
+
+/* Professional services invoice triage */
+function renderINV(){
+ const rows=ITRI.map((t,i)=>`<tr><td>${t.lbl}${t.amt?` <span class="muted tabnum">(${fmt(t.amt)})</span>`:''}</td>
+   <td style="width:240px"><select data-i="${i}">${ITRI_OPTS.map(o=>`<option ${state.invTri[i]===o?'selected':''}>${o}</option>`).join('')}</select></td></tr>`).join('');
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Professional services · Invoicing</div><h2>Build the invoice from the client's email</h2>
+   <div class="ctx"><b>Engagement terms on file</b><ul>
+     <li>Advisory work billed time &amp; materials at <b>$${P.psRate}/hr</b>; the client must approve hours.</li>
+     <li>Q2 implementation is a <b>signed fixed-fee SOW of ${fmt(P.psSOW)}</b>, with <b>PO #4471</b> already on file.</li>
+     <li>Software licenses are <b>passed through at cost</b>; quantity and unit cost vary by order.</li>
+   </ul></div>
+   <div class="email-client"><div class="email-head"><div class="from">Dana Pruitt &lt;dana@northwind.co&gt;</div><div class="sub">Subject: Please invoice us</div></div>
+     <div class="email-body">Hi, can you invoice us for: (1) the advisory work your team did in March, (2) the Q2 implementation project, and (3) the software licenses you set us up with? Want to get these paid before quarter-end. Thanks, Dana</div></div>
+   <h3>Decide what you can bill</h3>
+   <table class="led"><tbody>${rows}</tbody></table>
+   <h3>Clarification to the client</h3>
+   <p class="small muted" style="margin-top:0">Draft the message asking for exactly what you need to finish this invoice. Reviewed by a person.</p>
+   <textarea id="invmsg" placeholder="Reply to Dana...">${state.invMsg}</textarea>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button><button class="btn primary" onclick="goNext()">Next station →</button></div>
+ </div></div>`;
+ app().querySelectorAll('select').forEach(s=>s.onchange=e=>state.invTri[e.target.dataset.i]=e.target.value);
+ document.getElementById('invmsg').oninput=e=>state.invMsg=e.target.value;
+}
+function scoreINV(){let s=0;ITRI.forEach((t,i)=>{if(state.invTri[i]===t.ans)s++});return{s,max:3};}
+
+/* Communication */
+function renderM5(){
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Communication <span class="tag warn">Reviewer-scored</span></div><h2>Respond to the partner</h2>
+   <div class="prompt">It is the <b>16th</b>. A partner emails, upset that their reports look wrong. You sent them uncategorized expenses on the <b>3rd</b> and followed up <b>twice</b> with no reply, so you could not close last month's books. Write your response.</div>
+   <textarea id="em" placeholder="Reply to the partner...">${state.m5}</textarea>
+   <p class="small muted" style="margin-top:10px">Reviewed by a person.</p>
+   <div class="nav"><button class="btn ghost" onclick="goPrev()">← Back</button><button class="btn primary" onclick="finish()">Finish &amp; generate code →</button></div>
+ </div></div>`;
+ document.getElementById('em').oninput=e=>state.m5=e.target.value;
+}
+</script>
+<script>
+/* ===================== STATION REGISTRY ===================== */
+const EJE_ST={id:'eje',kicker:'E-commerce · Consolidating revenue',title:'Map the month\u2019s revenue journal entry',
+ intro:`<p class="muted">These are the consolidated channel reports for the month, posted as a single journal entry. Map each line.</p>`,
+ lines:EJE,accounts:EJE_ACCTS};
+const PJE_ST={id:'pje',kicker:'Food & retail · POS month-end',title:'Map the Square month-end entry',
+ intro:`<p class="muted">Here is the Square month-end summary, posted as one journal entry. Map each line.</p>`,
+ lines:PJE,accounts:PJE_ACCTS};
+const PAY_ST={id:'pay',kicker:'Integration mapping · Payroll \u2192 QBO',title:'Map the payroll integration',
+ intro:`<div class="prompt">You are connecting the payroll provider to QuickBooks. Here is one pay run. Map each component to an account and a side.</div>`,
+ lines:PAYJE,accounts:PAY_ACCTS};
+
+const STDEF={
+ m1:{section:'core',dom:'Transaction Classification',render:renderM1,score:scoreM1},
+ m2:{section:'core',dom:'Report Review & Error Detection',render:renderM2,score:scoreM2},
+ m3:{section:'core',dom:'Adjusting Journal Entries',render:renderM3,score:scoreM3},
+ m4:{section:'core',dom:'Bank Reconciliation',render:renderM4,score:scoreM4},
+ edep:{section:'ecom',dom:'E-commerce Revenue',render:renderEDEP,score:scoreEDEP},
+ eje:{section:'ecom',dom:'E-commerce Revenue',render:()=>renderMap(EJE_ST),score:()=>scoreMap('eje',EJE)},
+ pje:{section:'pos',dom:'POS / Hospitality',render:()=>renderMap(PJE_ST),score:()=>scoreMap('pje',PJE)},
+ pcash:{section:'pos',dom:'POS / Hospitality',render:renderPCASH,score:scorePCASH},
+ inv:{section:'profsvc',dom:'Professional Services & Invoicing',render:renderINV,score:scoreINV},
+ pay:{section:'integration',dom:'Integration Mapping',render:()=>renderMap(PAY_ST),score:()=>scoreMap('pay',PAYJE)},
+ m5:{section:'always',dom:'Communication',render:renderM5,score:()=>({s:0,max:0})}
+};
+const SECTION_STATIONS={core:['m1','m2','m3','m4'],ecom:['edep','eje'],pos:['pje','pcash'],profsvc:['inv'],integration:['pay']};
+const ORDER=(()=>{const o=[];['core','ecom','pos','profsvc','integration'].forEach(s=>{
+  if(CONFIG.SECTIONS.includes(s))(SECTION_STATIONS[s]||[]).forEach(id=>o.push(id));});
+  o.push('m5');return o;})();
+
+/* ===================== ENGINE ===================== */
+let cur=-1; // -1 intro
+const curId=()=>(cur>=0&&cur<ORDER.length)?ORDER[cur]:null;
+function recTime(){const id=curId();if(id)state.times[id]=(state.times[id]||0)+Math.round((Date.now()-state.modStart)/1000);state.modStart=Date.now();}
+function buildStepper(){const s=document.getElementById('stepper');s.innerHTML='';
+  ORDER.forEach((id,i)=>{const d=document.createElement('div');d.className='step'+(i<cur?' done':'')+(i===cur?' active':'');s.appendChild(d);});}
+function renderStation(){state.modStart=Date.now();buildStepper();window.scrollTo({top:0,behavior:'smooth'});STDEF[ORDER[cur]].render();}
+function goNext(){recTime();cur++;if(cur>=ORDER.length){finish();return;}renderStation();}
+function goPrev(){recTime();if(cur<=0){cur=-1;renderIntro();buildStepper();return;}cur--;renderStation();}
+
+setInterval(()=>{const t=Math.floor((Date.now()-state.start)/1000);
+  document.getElementById('clocktxt').textContent=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');},1000);
+window.addEventListener('blur',()=>{if(curId())state.integrity.blur++;});
+document.addEventListener('paste',()=>{if(cur>=0)state.integrity.pastes++;});
+
+const SECLABEL={core:'Core bookkeeping',ecom:'E-commerce',pos:'Food & retail (POS)',profsvc:'Professional services',integration:'Integration mapping'};
+function renderIntro(){
+ const active=['core','ecom','pos','profsvc','integration'].filter(s=>CONFIG.SECTIONS.includes(s));
+ const chips=active.map(s=>`<span class="tag">${SECLABEL[s]}</span>`).join(' ');
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Ledgr Inc. · Pre-hire Working Session</div>
+   <h1>Show us the work,<br>not the words.</h1>
+   <p class="lead">This is a hands-on screening. You\u2019ll move through a series of short stations inside simulated tools and actually do each task. Your answers are scored automatically and sent to the hiring team as a single secure code at the end.</p>
+   <div class="prompt"><b>Before you start:</b><ul class="clean">
+     <li>Plan on <b>30\u201340 minutes</b>. Each station is timed and your time is recorded.</li>
+     <li>Every figure is generated fresh for your session, so there are no answers to look up.</li>
+     <li>Work the way you would on the job. Accuracy and judgment beat speed.</li></ul>
+     <div style="margin-top:10px">This session covers: ${chips}</div></div>
+   <label class="fld" for="nm">First and last name</label>
+   <input type="text" id="nm" placeholder="e.g. Jordan Avery" value="${esc(state.name)}">
+   <div class="nav"><span class="muted small">When you finish, you\u2019ll get a completion code to send to your contact.</span>
+     <button class="btn primary" id="startbtn">Begin assessment →</button></div>
+ </div></div>`;
+ document.getElementById('startbtn').onclick=()=>{const v=document.getElementById('nm').value.trim();
+   if(!v){document.getElementById('nm').focus();return;}state.name=v;cur=0;renderStation();};
+}
+
+/* ---------- scoring + payload ---------- */
+function mapDetail(id,lines){const a=state.map[id]||[];return lines.map((ln,i)=>{const x=a[i]||{};
+  return{lbl:ln.lbl,amt:ln.amt,acct:x.acct||'',dc:x.dc||'',keyAcct:ln.acct,keyDc:ln.dc,ok:(x.acct===ln.acct&&x.dc===ln.dc)};});}
+function buildPayload(){
+ const activeIds=ORDER.filter(id=>STDEF[id].score().max>0);
+ const byDom={};
+ activeIds.forEach(id=>{const d=STDEF[id];const r=d.score();byDom[d.dom]=byDom[d.dom]||{s:0,max:0};byDom[d.dom].s+=r.s;byDom[d.dom].max+=r.max;});
+ const domains=Object.keys(byDom).map(k=>({name:k,s:Math.round(byDom[k].s*100)/100,max:byDom[k].max}));
+ const got=domains.reduce((a,d)=>a+d.s,0),max=domains.reduce((a,d)=>a+d.max,0);
+ const pct=max?Math.round(got/max*100):0;
+ let band;if(pct>=85)band='Strong - advance';else if(pct>=70)band='Solid - proceed';
+ else if(pct>=55)band='Mixed - interview with probes';else band='Below bar - do not advance';
+ const has=id=>ORDER.includes(id);
+ const detail={};
+ if(has('m1'))detail.m1=TX.map((t,i)=>({tx:t.d,amt:t.amt,chosen:state.m1[i]||'',key:t.ans,ok:state.m1[i]===t.ans}));
+ if(has('m2'))detail.m2={flagged:state.m2,errors:PL_ERR};
+ if(has('m3'))detail.m3={rows:state.m3,monthlyExpected:P.monthlyIns,annual:P.ins};
+ if(has('m4'))detail.m4={marks:REG.map(r=>({d:r.d,chosen:state.m4.marks[r.id]||'',key:r.st})),fee:state.m4.fee,bal:state.m4.bal,target:P.recAdjBank};
+ if(has('edep'))detail.edep=EDEP.map((t,i)=>({d:t.d,amt:t.amt,chosen:state.ecomDep[i]||'',key:t.ans,ok:state.ecomDep[i]===t.ans}));
+ if(has('eje'))detail.eje=mapDetail('eje',EJE);
+ if(has('pje'))detail.pje=mapDetail('pje',PJE);
+ if(has('pcash'))detail.pcash={selected:state.posCash.map(i=>({t:PCASH[i].t,ok:PCASH[i].ok}))};
+ if(has('inv'))detail.inv={tri:ITRI.map((t,i)=>({lbl:t.lbl,chosen:state.invTri[i]||'',key:t.ans,ok:state.invTri[i]===t.ans})),msg:state.invMsg};
+ if(has('pay'))detail.pay=mapDetail('pay',PAYJE);
+ return {v:2,name:state.name,finishedAt:new Date().toISOString(),
+   totalSec:Math.round((Date.now()-state.start)/1000),integrity:state.integrity,times:state.times,
+   sections:CONFIG.SECTIONS,domains,got:Math.round(got*100)/100,max,pct,band,
+   communication:{partnerEmail:state.m5,invoiceClarification:state.invMsg},detail};
+}
+async function finish(){
+ recTime();
+ app().innerHTML=`<div class="screen"><div class="card"><div class="kicker">Finishing</div><h2>Sealing your results…</h2><p class="muted">One moment.</p></div></div>`;
+ const payload=buildPayload();
+ let code;try{code=await encryptPayload(payload);}catch(e){code='ERROR: '+e.message;}
+ const ref=await shortRef(code).catch(()=>'--------');
+ const scoreLine=CONFIG.SHOW_CANDIDATE_SCORE?`<p class="lead">Your score: <b>${payload.pct}%</b> - ${payload.band}.</p>`:'';
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Assessment complete</div><h1>Thank you, ${esc(state.name.split(' ')[0]||'')}.</h1>
+   ${scoreLine}
+   <p class="lead">Your responses have been scored and encrypted. Send the completion code below to your Ledgr contact. Only they can open it.</p>
+   <div class="prompt" style="border-left-color:var(--emerald)"><b>Reference ID:</b> <span class="refid">${ref}</span><br><span class="small muted">Mention this short ID in your message; it matches the code below.</span></div>
+   <label class="fld">Completion code</label>
+   <div class="codebox" id="code">${esc(code)}</div>
+   <div class="nav noprint"><button class="btn ghost" id="copy">Copy code</button><button class="btn primary" id="dl">Download as file</button></div>
+   <p class="small muted noprint" style="margin-top:14px">You can close this window once you\u2019ve sent the code. Total time ${Math.floor(payload.totalSec/60)}m ${payload.totalSec%60}s.</p>
+ </div></div>`;
+ buildStepper();document.querySelectorAll('.step').forEach(s=>s.classList.add('done'));
+ document.getElementById('copy').onclick=()=>{navigator.clipboard.writeText(code).then(()=>{document.getElementById('copy').textContent='Copied ✓';});};
+ document.getElementById('dl').onclick=()=>{const b=new Blob([`Ledgr assessment - ${state.name}\nReference: ${ref}\n\n${code}\n`],{type:'text/plain'});
+   const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`ledgr-assessment-${ref}.txt`;a.click();URL.revokeObjectURL(u);};
+}
+</script>
+<script>
+/* ===================== ADMIN REVIEW CONSOLE ===================== */
+const ratioColor=r=>r>=.7?'var(--emerald)':r>=.5?'var(--amber)':'var(--rust)';
+
+function mapTable(rows){
+ return `<table class="led"><thead><tr><th>Line</th><th>Picked</th><th>Correct</th><th style="text-align:center">OK</th></tr></thead><tbody>`+
+ rows.map(r=>`<tr><td>${esc(r.lbl)}</td><td class="${r.ok?'':'wrong'}">${esc(r.acct||'(blank)')} / ${r.dc||'-'}</td>
+   <td>${esc(r.keyAcct)} / ${r.keyDc}</td><td style="text-align:center">${r.ok?'✓':'✕'}</td></tr>`).join('')+`</tbody></table>`;}
+
+function bandFor(pct){
+ if(pct>=85)return{text:'Strong - advance',color:'var(--emerald)'};
+ if(pct>=70)return{text:'Solid - proceed',color:'var(--emerald)'};
+ if(pct>=55)return{text:'Mixed - interview with probes',color:'var(--amber)'};
+ return{text:'Below bar - do not advance',color:'var(--rust)'};
+}
+function renderReport(p){
+ const doms=p.domains.map(d=>{const r=d.max?d.s/d.max:0;return `<div class="dom"><div class="h"><b>${esc(d.name)}</b>
+   <span class="s">${d.s} / ${d.max}</span></div><div class="bar"><i style="width:${Math.round(r*100)}%;background:${ratioColor(r)}"></i></div></div>`;}).join('');
+ const blurWarn=p.integrity.blur>2, pasteWarn=p.integrity.pastes>0;
+ const d=p.detail||{};
+ const sec=[];
+ if(d.m1)sec.push(['Transaction classification',
+   `<table class="led"><thead><tr><th>Transaction</th><th>Picked</th><th>Correct</th><th style="text-align:center">OK</th></tr></thead><tbody>`+
+   d.m1.map(r=>`<tr><td>${esc(r.tx)}</td><td class="${r.ok?'':'wrong'}">${esc(r.chosen||'(blank)')}</td><td>${esc(r.key)}</td><td style="text-align:center">${r.ok?'\u2713':'\u2715'}</td></tr>`).join('')+`</tbody></table>`]);
+ if(d.m2){const fa=d.m2.flagged.filter(x=>!d.m2.errors.includes(x));const miss=d.m2.errors.filter(x=>!d.m2.flagged.includes(x));
+   sec.push(['Report review',`<div class="kv"><span class="k">Real errors caught</span><span class="v">${d.m2.errors.filter(x=>d.m2.flagged.includes(x)).length} / ${d.m2.errors.length}</span></div>
+   <div class="kv ${fa.length?'wrong':''}"><span class="k">False flags (clean lines)</span><span class="v">${fa.length?esc(fa.join(', ')):'none'}</span></div>
+   <div class="kv ${miss.length?'wrong':''}"><span class="k">Missed errors</span><span class="v">${miss.length?esc(miss.join(', ')):'none'}</span></div>`]);}
+ if(d.m3){sec.push(['Adjusting entry',`<div class="kv"><span class="k">Expected this month</span><span class="v">${fmt(d.m3.monthlyExpected)}</span> </div>`+
+   d.m3.rows.map(r=>`<div class="kv"><span class="k">${esc(r.acct||'(blank)')}</span><span class="v">D ${r.d||'0'} / C ${r.c||'0'}</span></div>`).join('')]);}
+ if(d.m4){sec.push(['Bank reconciliation',d.m4.marks.map(m=>`<div class="kv ${m.chosen===m.key?'':'wrong'}"><span class="k">${esc(m.d)}</span><span class="v">${m.chosen||'(none)'} / key ${m.key}</span></div>`).join('')+
+   `<div class="kv ${d.m4.fee?'':'wrong'}"><span class="k">Booked the service charge</span><span class="v">${d.m4.fee?'yes':'no'}</span></div>
+   <div class="kv ${Math.abs((parseFloat(d.m4.bal)||0)-d.m4.target)<0.5?'right':'wrong'}"><span class="k">Reconciled balance</span><span class="v">${esc(d.m4.bal||'(blank)')} / target ${fmt(d.m4.target)}</span></div>`]);}
+ if(d.edep)sec.push(['E-commerce: deposits vs revenue',
+   `<table class="led"><thead><tr><th>Deposit</th><th>Picked</th><th>Correct</th><th style="text-align:center">OK</th></tr></thead><tbody>`+
+   d.edep.map(r=>`<tr><td>${esc(r.d)}</td><td class="${r.ok?'':'wrong'}">${esc(r.chosen||'(blank)')}</td><td>${esc(r.key)}</td><td style="text-align:center">${r.ok?'\u2713':'\u2715'}</td></tr>`).join('')+`</tbody></table>`]);
+ if(d.eje)sec.push(['E-commerce: revenue JE mapping',mapTable(d.eje)]);
+ if(d.pje)sec.push(['POS: month-end JE mapping',mapTable(d.pje)]);
+ if(d.pcash)sec.push(['POS: cash-handling judgment',d.pcash.selected.length?d.pcash.selected.map(o=>`<div class="kv ${o.ok?'right':'wrong'}"><span class="k">${esc(o.t)}</span><span class="v">${o.ok?'sound':'incorrect'}</span></div>`).join(''):'<p class="muted small">Nothing selected.</p>']);
+ if(d.inv)sec.push(['Professional services: invoice triage',
+   d.inv.tri.map(r=>`<div class="kv ${r.ok?'right':'wrong'}"><span class="k">${esc(r.lbl)}</span><span class="v">${esc(r.chosen||'(blank)')} / key ${esc(r.key)}</span></div>`).join('')+
+   `<p class="small muted" style="margin-bottom:0">The clarification message is scored under Written responses above.</p>`]);
+ if(d.pay)sec.push(['Integration mapping: payroll',mapTable(d.pay)]);
+
+ const deep=sec.map(([t,h])=>`<details class="exp"><summary>${t}</summary><div class="ic">${h}</div></details>`).join('');
+ const mins=Math.floor(p.totalSec/60),secs=p.totalSec%60;
+ const writes=[{key:'comm',label:'Response to the partner',text:p.communication.partnerEmail}];
+ if(d.inv)writes.push({key:'inv',label:'Invoice clarification to the client',text:d.inv.msg});
+ const man={};writes.forEach(w=>man[w.key]=null);
+ const rateCard=`<div class="card"><h3 style="margin-top:0">Written responses \u00b7 score 1 to 10</h3>
+   <p class="small muted" style="margin-top:0">Each score folds into the total above, out of 10. Leave on Not scored to keep it out of the total.</p>
+   ${writes.map(w=>`<div style="margin-top:16px">
+     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+       <b>${w.label}</b>
+       <select class="ratesel" data-key="${w.key}" style="width:auto;min-width:130px">
+         <option value="">Not scored</option>
+         ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n} / 10</option>`).join('')}
+       </select></div>
+     <div class="emailbox" style="margin-top:8px">${esc(w.text||'(left blank)')}</div></div>`).join('')}
+ </div>`;
+ app().innerHTML=`<div class="screen">
+   <div class="card">
+     <div class="kicker">Score report <span class="tag">${esc(p.sections.join(', '))}</span></div>
+     <h1 style="margin-bottom:6px">${esc(p.name||'(no name)')}</h1>
+     <p class="muted small">Submitted ${new Date(p.finishedAt).toLocaleString()} \u00b7 total time ${mins}m ${secs}s</p>
+     <div class="divider"></div>
+     <div class="score-hero">
+       <div class="dial" id="dialEl"><span class="pct" id="pctEl">0%</span></div>
+       <div><div class="band" id="bandEl" style="color:#fff">--</div>
+       <p class="muted" id="breakdownEl" style="margin:10px 0 0"></p></div>
+     </div>
+   </div>
+   <div class="card"><h3 style="margin-top:0">Domain breakdown</h3>${doms}</div>
+   <div class="card"><h3 style="margin-top:0">Integrity signals</h3>
+     <div class="flags">
+       <div class="f ${blurWarn?'warn':'clean'}"><span>Left the window / switched tabs</span><span class="v">${p.integrity.blur}\u00d7</span></div>
+       <div class="f ${pasteWarn?'warn':'clean'}"><span>Paste events</span><span class="v">${p.integrity.pastes}</span></div>
+     </div>
+     <p class="small muted" style="margin-bottom:0">Signals, not verdicts. A paste or two can be innocent; clusters around the written answers are worth a second look.</p>
+   </div>
+   ${rateCard}
+   <div class="card"><h3 style="margin-top:0">Station-by-station detail</h3>${deep}</div>
+   <div class="nav noprint"><button class="btn ghost" onclick="renderAdmin()">\u2190 Decode another</button><button class="btn primary" onclick="window.print()">Print / save PDF</button></div>
+ </div>`;
+ function refreshScore(){
+   let mg=0,mm=0,n=0;
+   writes.forEach(w=>{const v=man[w.key];if(v!=null){mg+=v;mm+=10;n++;}});
+   const got=Math.round((p.got+mg)*100)/100, max=p.max+mm, pct=max?Math.round(got/max*100):0;
+   const b=bandFor(pct);
+   const dial=document.getElementById('dialEl');
+   dial.style.background=`conic-gradient(${b.color} calc(${pct}*1%),var(--line-2) 0)`;
+   dial.style.setProperty('--p',pct);
+   document.getElementById('pctEl').textContent=pct+'%';
+   const bd=document.getElementById('bandEl');bd.textContent=b.text;bd.style.background=b.color;
+   const left=writes.length-n;
+   document.getElementById('breakdownEl').innerHTML=`Auto-scored <b>${p.got} / ${p.max}</b>`+(n?` \u00b7 written <b>${mg} / ${mm}</b>`:'')+` \u00b7 total <b>${got} / ${max}</b>`+(left?` \u00b7 <span style="color:var(--amber)">${left} written response${left>1?'s':''} not yet scored</span>`:'');
+ }
+ app().querySelectorAll('.ratesel').forEach(sl=>sl.onchange=e=>{const v=e.target.value;man[e.target.dataset.key]=v===''?null:+v;refreshScore();});
+ refreshScore();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderAdmin(){
+ document.getElementById('brandsub').textContent='Review Console';
+ document.getElementById('stepper').innerHTML='';
+ const base=location.origin+location.pathname;
+ const SECORDER=['core','ecom','pos','profsvc','integration'];
+ const checks=SECORDER.map(s=>`<label class="check"><input type="checkbox" class="seccb" value="${s}" checked> <span>${SECLABEL[s]}</span></label>`).join('');
+ app().innerHTML=`<div class="screen"><div class="card">
+   <div class="kicker">Admin · Review Console</div><h2>Decode a completion code</h2>
+   <p class="muted">Paste your private key and a candidate\u2019s code. Decryption happens here in your browser; nothing is sent anywhere.</p>
+   <label class="fld">Your private key (PKCS8, base64)</label>
+   <textarea id="pk" placeholder="MIIE..." style="min-height:90px;font-family:var(--mono);font-size:12px"></textarea>
+   <label class="fld" style="margin-top:14px">Candidate completion code</label>
+   <textarea id="cc" placeholder="LEDGR2...." style="min-height:90px;font-family:var(--mono);font-size:12px"></textarea>
+   <div id="err" class="small" style="color:var(--rust);margin-top:8px"></div>
+   <div class="nav"><button class="linkbtn" id="genbtn">Generate a new keypair</button>
+     <button class="btn primary" id="dec">Decrypt &amp; view report</button></div>
+   <div id="keys"></div>
+ </div>
+ <div class="card">
+   <div class="kicker">Admin · Candidate link</div><h2>Build an assessment link</h2>
+   <p class="muted">Pick the modules for this candidate and share the generated link. Set the base link once after you host the file. Never send anyone a link with the admin hash on it.</p>
+   <label class="fld">Base link (where the file is hosted)</label>
+   <input type="text" id="baseurl" value="${base}">
+   <p class="small muted" style="margin:6px 0 0">Right now this points at wherever you opened the file. Once it lives on a real URL, paste that here.</p>
+   <label class="fld" style="margin-top:16px">Modules to include</label>
+   <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px">${checks}</div>
+   <label class="fld" style="margin-top:18px">Shareable link <span id="esttime" class="muted" style="font-weight:400;text-transform:none;letter-spacing:0"></span></label>
+   <div class="codebox" id="genlink"></div>
+   <div class="nav noprint"><span class="muted small">The communication station is always included.</span><button class="btn primary" id="copylink">Copy link</button></div>
+ </div></div>`;
+ document.getElementById('dec').onclick=async()=>{
+   const pk=document.getElementById('pk').value.trim(),cc=document.getElementById('cc').value.trim();
+   const err=document.getElementById('err');err.textContent='';
+   if(!pk||!cc){err.textContent='Paste both the private key and the code.';return;}
+   try{const payload=await decryptPayload(cc,pk);renderReport(payload);}
+   catch(e){err.textContent='Could not decrypt. Check that the key matches the public key in this file and the code is complete. ('+e.message+')';}
+ };
+ document.getElementById('genbtn').onclick=async()=>{
+   const kp=await crypto.subtle.generateKey({name:'RSA-OAEP',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['encrypt','decrypt']);
+   const pub=bufToB64(await crypto.subtle.exportKey('spki',kp.publicKey));
+   const priv=bufToB64(await crypto.subtle.exportKey('pkcs8',kp.privateKey));
+   document.getElementById('keys').innerHTML=`<div class="divider"></div>
+     <div class="prompt"><b>New keypair generated.</b> Paste the public key into <code>CONFIG.PUBKEY</code> at the top of this file, save it, and distribute that file. Keep the private key somewhere safe (password manager). Anyone with the file can run the test; only this private key can read results.</div>
+     <label class="fld">Public key (embed in CONFIG.PUBKEY)</label><div class="codebox">${pub}</div>
+     <label class="fld" style="margin-top:12px">Private key (keep secret, never put in the file)</label><div class="codebox">${priv}</div>`;
+ };
+ const updateLink=()=>{
+   const b=document.getElementById('baseurl').value.trim().replace(/[?#].*$/,'');
+   const sel=[...document.querySelectorAll('.seccb:checked')].map(c=>c.value);
+   const url=sel.length?b+'?sections='+sel.join(','):b;
+   document.getElementById('genlink').textContent=url;
+   const mins={core:12,ecom:7,pos:7,profsvc:5,integration:4};
+   let t=4;sel.forEach(s=>t+=mins[s]||0);
+   document.getElementById('esttime').textContent=sel.length?'· about '+t+' min':'· select at least one module';
+ };
+ document.getElementById('baseurl').oninput=updateLink;
+ document.querySelectorAll('.seccb').forEach(c=>c.onchange=updateLink);
+ document.getElementById('copylink').onclick=()=>{
+   navigator.clipboard.writeText(document.getElementById('genlink').textContent).then(()=>{
+     document.getElementById('copylink').textContent='Copied ✓';});
+ };
+ updateLink();
+}
+
+/* ===================== BOOT ===================== */
+if(location.hash==='#'+CONFIG.ADMIN_HASH){renderAdmin();}else{renderIntro();}
+</script>
+</body>
+</html>
