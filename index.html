@@ -622,9 +622,10 @@ const STDEF={
  revrec:{section:'gaap',dom:'Revenue Recognition',render:()=>renderComposite(REVREC_ST),score:()=>scoreComposite(REVREC_ST)},
  analyze:{section:'gaap',dom:'Financial Analysis',render:()=>renderComposite(ANALYZE_ST),score:()=>scoreComposite(ANALYZE_ST)},
  invd:{section:'gaap',dom:'Inventory',render:()=>renderComposite(INVD_ST),score:()=>scoreComposite(INVD_ST)},
+ ico:{section:'gaap',dom:'Intercompany',render:()=>renderComposite(ICO_ST),score:()=>scoreComposite(ICO_ST)},
  m5:{section:'always',dom:'Communication',render:renderM5,score:()=>({s:0,max:0})}
 };
-const SECTION_STATIONS={core:['m1','m2','m3','m4'],gaap:['dep','basis','accr','revrec','analyze','invd'],ecom:['edep','eje'],pos:['pje','pcash'],profsvc:['inv'],integration:['pay']};
+const SECTION_STATIONS={core:['m1','m2','m3','m4'],gaap:['dep','basis','accr','revrec','analyze','invd','ico'],ecom:['edep','eje'],pos:['pje','pcash'],profsvc:['inv'],integration:['pay']};
 const ORDER=(()=>{const o=[];['core','gaap','ecom','pos','profsvc','integration'].forEach(s=>{
   if(CONFIG.SECTIONS.includes(s))(SECTION_STATIONS[s]||[]).forEach(id=>o.push(id));});
   o.push('m5');return o;})();
@@ -886,7 +887,7 @@ function renderAdmin(){
    const sel=[...document.querySelectorAll('.seccb:checked')].map(c=>c.value);
    const url=sel.length?b+'?sections='+sel.join(','):b;
    document.getElementById('genlink').textContent=url;
-   const mins={core:12,gaap:20,ecom:7,pos:7,profsvc:5,integration:4};
+   const mins={core:12,gaap:24,ecom:7,pos:7,profsvc:5,integration:4};
    let t=4;sel.forEach(s=>t+=mins[s]||0);
    document.getElementById('esttime').textContent=sel.length?'· about '+t+' min':'· select at least one module';
  };
@@ -1055,7 +1056,37 @@ const INVD_ST={id:'invd',kicker:'Fundamentals \u00b7 Inventory',title:'Inventory
     {t:'Raise book inventory to the higher figure so nothing looks off',ok:false},
     {t:'Ignore it as long as the dollar amount is under the bank balance',ok:false}]}
  ]};
-const COMPOSITE_STATIONS={dep:DEP_ST,basis:BASIS_ST,accr:ACCR_ST,revrec:REVREC_ST,analyze:ANALYZE_ST,invd:INVD_ST};
+const _ico=(()=>({amt:r50(rnd(2500,9000))}))();
+const ICO_ST={id:'ico',kicker:'Fundamentals \u00b7 Intercompany',title:'Due to / due from between entities',
+ intro:`<p class="muted">An owner runs two related companies, A and B, that share costs and move cash back and forth. Intercompany balances are tracked with due to / due from accounts.</p>`,
+ parts:[
+  {type:'select',q:'How do the due to and due from accounts relate to each other?',
+   options:['Due From is a receivable (asset) on the entity that is owed; Due To is a payable (liability) on the entity that owes. The two balances should always mirror each other.',
+    'Both Due To and Due From are revenue accounts that capture intercompany profit.',
+    'It is one account seen from one company; only the entity that pays records anything.',
+    'They are equity accounts that replace owner contributions between related companies.'],answer:0},
+  {type:'classify',q:'For each event, what does Company A record on its own books?',optionList:['Select one','Due From Company B (A is owed)','Due To Company B (A owes)'],
+   rows:[{label:'Company A pays a vendor bill on behalf of Company B.',answer:'Due From Company B (A is owed)'},
+    {label:'Company B covers Company A\u2019s payroll this week.',answer:'Due To Company B (A owes)'},
+    {label:'Company A wires cash to Company B to fund its operations.',answer:'Due From Company B (A is owed)'},
+    {label:'Company B sends cash to Company A to cover a shortfall.',answer:'Due To Company B (A owes)'}]},
+  {type:'je',q:`Company A pays a <b>${fmt(_ico.amt)}</b> vendor bill out of its own bank, but the expense belongs to Company B. Record both sides.`,
+   accounts:["Select one","Cash","Operating Expenses","Due From Company B","Due To Company A","Due To Company B","Due From Company A","Owner's Draw","Intercompany Income"],
+   entries:[{label:'On Company A\u2019s books (paid the cash)',expect:[{acct:'Due From Company B',side:'D',amt:_ico.amt},{acct:'Cash',side:'C',amt:_ico.amt}]},
+    {label:'On Company B\u2019s books (owns the expense)',expect:[{acct:'Operating Expenses',side:'D',amt:_ico.amt},{acct:'Due To Company A',side:'C',amt:_ico.amt}]}]},
+  {type:'je',q:`Later, Company B repays the <b>${fmt(_ico.amt)}</b> to Company A by bank transfer. Record both sides.`,
+   accounts:["Select one","Cash","Operating Expenses","Due From Company B","Due To Company A","Due To Company B","Due From Company A","Owner's Draw","Intercompany Income"],
+   entries:[{label:'On Company B\u2019s books (sends the cash)',expect:[{acct:'Due To Company A',side:'D',amt:_ico.amt},{acct:'Cash',side:'C',amt:_ico.amt}]},
+    {label:'On Company A\u2019s books (receives the cash)',expect:[{acct:'Cash',side:'D',amt:_ico.amt},{acct:'Due From Company B',side:'C',amt:_ico.amt}]}]},
+  {type:'multi',q:'How would you manage these accounts ongoing? Select all that apply.',
+   options:[{t:'Reconcile Due From on one entity to Due To on the other every month; the two should agree',ok:true},
+    {t:'Keep a memo or backup for every intercompany transfer',ok:true},
+    {t:'Confirm the intercompany balances net to zero when the entities are combined',ok:true},
+    {t:'Record intercompany cash transfers as income on the entity that receives them',ok:false},
+    {t:'Run the owners\u2019 personal expenses through due to / due from to keep them off the P&L',ok:false},
+    {t:'Let the balances drift apart since they are only internal',ok:false}]}
+ ]};
+const COMPOSITE_STATIONS={dep:DEP_ST,basis:BASIS_ST,accr:ACCR_ST,revrec:REVREC_ST,analyze:ANALYZE_ST,invd:INVD_ST,ico:ICO_ST};
 
 /* ===================== BOOT ===================== */
 if(location.hash==='#'+CONFIG.ADMIN_HASH){renderAdmin();}else{renderIntro();}
